@@ -23,6 +23,22 @@ export default function HomePage() {
       setLoading(false);
     }
   };
+  const [promoProducts, setPromoProducts] = useState([]);
+
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      // Cambia el endpoint por el correcto de tu backend:
+      const response = await fetch('http://192.168.1.86:3002/api/productos');
+      const data = await response.json();
+      const onlyPromos = data.filter(prod => prod.PROMOCION === true || prod.PROMOCION === 1);
+      setPromoProducts(onlyPromos);
+    } catch (err) {
+      setPromoProducts([]);
+    }
+  };
+  fetchProducts();
+}, []);
 
   // Effect to load exchange rates on component mount
   useEffect(() => {
@@ -216,74 +232,40 @@ export default function HomePage() {
       </section>
 
       {/* Featured Products Preview */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Productos Destacados</h2>
-            <p className="text-gray-600">
-              Descubre nuestros productos más populares este mes
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { name: 'Taladro Percutor', price: 89990 },
-              { name: 'Kit de Llaves', price: 45990 },
-              { name: 'Sierra Circular', price: 159990 },
-              { name: 'Martillo Profesional', price: 29990 }
-            ].map((product, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200 overflow-hidden">
-                <div className="bg-gradient-to-br from-gray-200 to-gray-300 h-48 flex items-center justify-center">
-                  <span className="text-gray-500 text-sm">Imagen del Producto</span>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">{product.name}</h3>
-                  <div className="flex items-center mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
-                    ))}
-                    <span className="text-sm text-gray-600 ml-2">(24)</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xl font-bold text-blue-600">
-                      ${product.price.toLocaleString('es-CL')}
-                    </span>
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors duration-200">
-                      Agregar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          <div className="text-center mt-12">
-            <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-              Ver Todos los Productos
-            </button>
-          </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+  {promoProducts.length === 0 && (
+    <div className="col-span-4 text-center text-gray-400">
+      No hay productos en promoción.
+    </div>
+  )}
+  {promoProducts.map((product, index) => (
+    <div key={product.ID} className="bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200 overflow-hidden">
+      <div className="bg-gradient-to-br from-gray-200 to-gray-300 h-48 flex items-center justify-center">
+        <span className="text-gray-500 text-sm">Imagen del Producto</span>
+      </div>
+      <div className="p-4">
+        <h3 className="font-semibold text-gray-900 mb-2">{product.MARCA} - {product.TIPO_PRODUCTO}</h3>
+        <div className="flex items-center mb-2">
+          {[...Array(5)].map((_, i) => (
+            <Star key={i} className="h-4 w-4 text-yellow-400 fill-current" />
+          ))}
+          <span className="text-sm text-gray-600 ml-2">({product.STOCK} en stock)</span>
         </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-16 bg-blue-600">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">Mantente Informado</h2>
-          <p className="text-blue-100 mb-8 max-w-2xl mx-auto">
-            Suscríbete a nuestro boletín y sé el primero en conocer sobre nuevos productos, ofertas especiales y descuentos exclusivos.
-          </p>
-          <div className="max-w-md mx-auto flex gap-4">
-            <input
-              type="email"
-              placeholder="Ingresa tu correo electrónico"
-              className="flex-1 px-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-white focus:outline-none"
-            />
-            <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors duration-200">
-              Suscribirse
-            </button>
-          </div>
+        <div className="flex justify-between items-center">
+          <span className="text-xl font-bold text-blue-600">
+            ${parseInt(product.PRECIO).toLocaleString('es-CL')}
+          </span>
+          <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700 transition-colors duration-200">
+            Agregar
+          </button>
         </div>
-      </section>
+        <div className="mt-2">
+          <span className="inline-block bg-red-500 text-white text-xs px-2 rounded">¡EN PROMO!</span>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">

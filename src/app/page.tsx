@@ -305,7 +305,7 @@ export default function HomePage() {
               <h3 className="text-lg font-semibold mb-4">Enlaces Rápidos</h3>
               <ul className="space-y-2">
                 <li><a href="/" className="text-gray-400 hover:text-white transition-colors duration-200">Inicio</a></li>
-                <li><a href="/productos" className="text-gray-400 hover:text-white transition-colors duration-200">Productos</a></li>
+                <li><a href="/products" className="text-gray-400 hover:text-white transition-colors duration-200">Productos</a></li>
                 <li><a href="/contacto" className="text-gray-400 hover:text-white transition-colors duration-200">Contacto</a></li>
                 <li><a href="/admin" className="text-gray-400 hover:text-white transition-colors duration-200">Administrar</a></li>
               </ul>

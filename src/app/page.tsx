@@ -45,7 +45,7 @@ export default function HomePage() {
     setCalculatorMode(calculatorMode === 'USD_to_CLP' ? 'CLP_to_USD' : 'USD_to_CLP');
   };
 
-  const formatCurrency = (amount, currency) => {
+  const formatCurrency = (amount: number, currency: string) => {
     if (currency === 'CLP') {
       return `$${amount.toLocaleString('es-CL')} CLP`;
     } else {

@@ -2,8 +2,26 @@
 import React, { useState, useEffect } from 'react';
 import { Wrench, Search, Grid, List, Star, ShoppingCart, ArrowUpDown, RefreshCw, Package, AlertCircle } from 'lucide-react';
 
-// Mock data
-const CATEGORIES = [
+type Category = {
+  id: string;
+  name: string;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  originalPrice?: number;
+  rating: number;
+  reviews: number;
+  stock: number;
+  description: string;
+  brand: string;
+  isOnSale?: boolean;
+};
+
+const CATEGORIES: Category[] = [
   { id: 'all', name: 'Todas las Categorías' },
   { id: 'tools', name: 'Herramientas' },
   { id: 'construction', name: 'Construcción' },
@@ -12,7 +30,7 @@ const CATEGORIES = [
   { id: 'hardware', name: 'Ferretería' }
 ];
 
-const MOCK_PRODUCTS = [
+const MOCK_PRODUCTS: Product[] = [
   {
     id: 1,
     name: 'Taladro Percutor Profesional',
@@ -63,9 +81,9 @@ const MOCK_PRODUCTS = [
 
 // Custom hooks
 function useProducts() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -85,8 +103,8 @@ function useProducts() {
 }
 
 function useExchangeRate() {
-  const [rate, setRate] = useState(850);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [rate, setRate] = useState<number>(850);
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
 
   const fetchRate = async () => {
     try {
@@ -108,18 +126,23 @@ function useExchangeRate() {
   return { rate, lastUpdated, fetchRate };
 }
 
-// Components
-function CurrencyCalculator({ rate, lastUpdated, onRefresh }) {
-  const [amount, setAmount] = useState(100);
-  const [mode, setMode] = useState('USD_to_CLP');
+type CurrencyCalculatorProps = {
+  rate: number;
+  lastUpdated: Date;
+  onRefresh: () => void;
+};
 
-  const convert = () => {
+const CurrencyCalculator: React.FC<CurrencyCalculatorProps> = ({ rate, lastUpdated, onRefresh }) => {
+  const [amount, setAmount] = useState<number>(100);
+  const [mode, setMode] = useState<'USD_to_CLP' | 'CLP_to_USD'>('USD_to_CLP');
+
+  const convert = (): number => {
     return mode === 'USD_to_CLP' 
       ? Math.round(amount * rate)
       : Math.round((amount / rate) * 100) / 100;
   };
 
-  const formatCurrency = (value, currency) => {
+  const formatCurrency = (value: number, currency: 'CLP' | 'USD'): string => {
     return currency === 'CLP' 
       ? `$${value.toLocaleString('es-CL')} CLP`
       : `US$${value.toLocaleString('en-US')}`;
@@ -134,10 +157,10 @@ function CurrencyCalculator({ rate, lastUpdated, onRefresh }) {
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(Number(e.target.value) || 0)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAmount(Number(e.target.value) || 0)}
                 className="w-20 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                min="0"
-                step="0.01"
+                min={0}
+                step={0.01}
               />
               <span className="text-sm font-medium text-gray-700">
                 {mode === 'USD_to_CLP' ? 'USD' : 'CLP'}
@@ -173,9 +196,14 @@ function CurrencyCalculator({ rate, lastUpdated, onRefresh }) {
       </div>
     </div>
   );
-}
+};
 
-function ProductCard({ product, viewMode }) {
+type ProductCardProps = {
+  product: Product;
+  viewMode: 'list' | 'grid';
+};
+
+const ProductCard: React.FC<ProductCardProps> = ({ product, viewMode }) => {
   const isListView = viewMode === 'list';
   
   return (
@@ -193,354 +221,195 @@ function ProductCard({ product, viewMode }) {
           </div>
         )}
         {product.stock === 0 && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <span className="text-white font-semibold">Agotado</span>
+          <div className="absolute bottom-2 right-2 bg-red-600 text-white px-2 py-1 rounded-md text-xs">
+            Sin stock
           </div>
         )}
       </div>
-      
-      <div className={`p-4 ${isListView ? 'flex-1' : ''}`}>
-        <div className="flex justify-between items-start mb-2">
-          <h3 className="font-semibold text-gray-900 text-sm">{product.name}</h3>
-          {product.brand && (
-            <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              {product.brand}
-            </span>
+
+      <div className={`p-3 flex flex-col justify-between ${isListView ? 'flex-1 ml-4' : ''}`}>
+        <h3 className="font-semibold text-gray-800 text-lg">{product.name}</h3>
+        <p className="text-gray-600 text-sm mb-2">{product.brand}</p>
+
+        <div className="flex items-center space-x-2 mb-1">
+          <Star className="h-4 w-4 text-yellow-400" />
+          <span className="text-sm text-gray-700">{product.rating.toFixed(1)}</span>
+          <span className="text-xs text-gray-500">({product.reviews} opiniones)</span>
+        </div>
+
+        <div className="text-gray-900 font-semibold text-xl mb-2">
+          {product.isOnSale && product.originalPrice ? (
+            <>
+              <span className="line-through text-gray-500 mr-2">${product.originalPrice.toLocaleString('es-CL')}</span>
+              <span className="text-red-600">${product.price.toLocaleString('es-CL')}</span>
+            </>
+          ) : (
+            <>${product.price.toLocaleString('es-CL')}</>
           )}
         </div>
-        
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.description}</p>
-        
-        <div className="flex items-center mb-3">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star 
-                key={i} 
-                className={`h-4 w-4 ${i < Math.floor(product.rating) ? 'text-yellow-400 fill-current' : 'text-gray-300'}`} 
-              />
-            ))}
-          </div>
-          <span className="text-sm text-gray-600 ml-2">({product.reviews})</span>
-        </div>
-        
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col">
-            {product.originalPrice && (
-              <span className="text-sm text-gray-500 line-through">
-                ${product.originalPrice.toLocaleString('es-CL')}
-              </span>
-            )}
-            <span className="text-xl font-bold text-blue-600">
-              ${product.price.toLocaleString('es-CL')}
-            </span>
-          </div>
-          
-          <button 
-            disabled={product.stock === 0}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
-              product.stock === 0 
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-blue-600 text-white hover:bg-blue-700'
-            }`}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            {product.stock === 0 ? 'Agotado' : 'Agregar'}
-          </button>
-        </div>
+
+        <p className="text-gray-700 text-sm line-clamp-3">{product.description}</p>
       </div>
     </div>
   );
-}
+};
 
-function LoadingState() {
+const ProductsList: React.FC<{
+  products: Product[];
+  viewMode: 'list' | 'grid';
+}> = ({ products, viewMode }) => {
+  if (products.length === 0) {
+    return <div className="p-4 text-center text-gray-500">No hay productos para mostrar.</div>;
+  }
+
+  if (viewMode === 'list') {
+    return (
+      <div className="space-y-4">
+        {products.map(p => (
+          <ProductCard key={p.id} product={p} viewMode="list" />
+        ))}
+      </div>
+    );
+  }
+
+  // Grid view
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-          <div className="bg-gray-300 h-48"></div>
-          <div className="p-4 space-y-3">
-            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-            <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-            <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-          </div>
-        </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {products.map(p => (
+        <ProductCard key={p.id} product={p} viewMode="grid" />
       ))}
     </div>
   );
-}
-
-function EmptyState({ onClearFilters }) {
-  return (
-    <div className="col-span-full flex flex-col items-center justify-center py-16">
-      <Package className="h-16 w-16 text-gray-400 mb-4" />
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
-      <p className="text-gray-600 text-center max-w-md mb-4">
-        No hay productos que coincidan con tus criterios de búsqueda.
-      </p>
-      <button 
-        onClick={onClearFilters}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        Limpiar Filtros
-      </button>
-    </div>
-  );
-}
-
-function ErrorState() {
-  return (
-    <div className="col-span-full flex flex-col items-center justify-center py-16">
-      <AlertCircle className="h-16 w-16 text-red-400 mb-4" />
-      <h3 className="text-xl font-semibold text-gray-900 mb-2">Error al cargar productos</h3>
-      <button 
-        onClick={() => window.location.reload()}
-        className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-      >
-        Reintentar
-      </button>
-    </div>
-  );
-}
+};
 
 export default function ProductsPage() {
   const { products, loading, error } = useProducts();
   const { rate, lastUpdated, fetchRate } = useExchangeRate();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
-  const [viewMode, setViewMode] = useState('grid');
-  const [priceRange, setPriceRange] = useState({ min: 0, max: 1000000 });
 
-  // Filter and sort products
-  const filteredProducts = products
-    .filter(product => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           product.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-      const matchesPrice = product.price >= priceRange.min && product.price <= priceRange.max;
-      return matchesSearch && matchesCategory && matchesPrice;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low': return a.price - b.price;
-        case 'price-high': return b.price - a.price;
-        case 'rating': return b.rating - a.rating;
-        default: return a.name.localeCompare(b.name);
-      }
-    });
+  const [category, setCategory] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200000]);
+  const [sortField, setSortField] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
 
-  const clearFilters = () => {
-    setSearchTerm('');
-    setSelectedCategory('all');
-    setPriceRange({ min: 0, max: 1000000 });
-  };
+  const filteredProducts = products.filter(p => {
+    const matchesCategory = category === 'all' || p.category === category;
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesPrice = p.price >= priceRange[0] && p.price <= priceRange[1];
+    return matchesCategory && matchesSearch && matchesPrice;
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    let aValue: any = a[sortField as keyof Product];
+    let bValue: any = b[sortField as keyof Product];
+
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    }
+
+    if (typeof aValue === 'number' && typeof bValue === 'number') {
+      return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+    }
+
+    return 0;
+  });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <Wrench className="h-8 w-8 text-blue-600" />
-              <span className="text-2xl font-bold text-gray-900">FERREMAS</span>
-            </div>
-            
-            <nav className="hidden lg:flex space-x-8">
-              <a href="/" className="text-gray-700 hover:text-blue-600 transition-colors">Inicio</a>
-              <a href="/products" className="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Productos</a>
-              <a href="/contact" className="text-gray-700 hover:text-blue-600 transition-colors">Contacto</a>
-              <a href="/admin" className="text-gray-700 hover:text-blue-600 transition-colors">Administrar</a>
-            </nav>
-            
-            <CurrencyCalculator rate={rate} lastUpdated={lastUpdated} onRefresh={fetchRate} />
-          </div>
-        </div>
+    <main className="max-w-7xl mx-auto p-4 space-y-6">
+      <header className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <h1 className="text-2xl font-bold text-gray-800">Productos</h1>
+        <CurrencyCalculator rate={rate} lastUpdated={lastUpdated} onRefresh={fetchRate} />
       </header>
 
-      {/* Page Header */}
-      <section className="bg-gradient-to-br from-blue-50 to-gray-100 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Nuestros <span className="text-blue-600">Productos</span>
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Descubre nuestra amplia selección de herramientas y materiales de construcción
-          </p>
+      <section className="flex flex-col md:flex-row md:items-center md:space-x-4 space-y-4 md:space-y-0">
+        <select
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          {CATEGORIES.map(c => (
+            <option key={c.id} value={c.id}>{c.name}</option>
+          ))}
+        </select>
+
+        <input
+          type="text"
+          placeholder="Buscar productos..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="border rounded px-3 py-2 flex-1"
+        />
+
+        <div className="flex items-center space-x-2">
+          <label className="text-sm">Precio desde:</label>
+          <input
+            type="number"
+            min={0}
+            max={priceRange[1]}
+            value={priceRange[0]}
+            onChange={e => setPriceRange([Number(e.target.value), priceRange[1]])}
+            className="border rounded px-2 py-1 w-20"
+          />
+          <label className="text-sm">hasta:</label>
+          <input
+            type="number"
+            min={priceRange[0]}
+            value={priceRange[1]}
+            onChange={e => setPriceRange([priceRange[0], Number(e.target.value)])}
+            className="border rounded px-2 py-1 w-20"
+          />
+        </div>
+
+        <select
+          value={sortField}
+          onChange={e => setSortField(e.target.value)}
+          className="border rounded px-3 py-2"
+        >
+          <option value="name">Nombre</option>
+          <option value="price">Precio</option>
+          <option value="rating">Calificación</option>
+          <option value="stock">Stock</option>
+        </select>
+
+        <select
+          value={sortDirection}
+          onChange={e => setSortDirection(e.target.value as 'asc' | 'desc')}
+          className="border rounded px-3 py-2"
+        >
+          <option value="asc">Ascendente</option>
+          <option value="desc">Descendente</option>
+        </select>
+
+        <div className="flex space-x-2">
+          <button
+            aria-label="Vista en cuadrícula"
+            onClick={() => setViewMode('grid')}
+            className={`p-2 rounded ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          >
+            <Grid className="w-5 h-5" />
+          </button>
+          <button
+            aria-label="Vista en lista"
+            onClick={() => setViewMode('list')}
+            className={`p-2 rounded ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+          >
+            <List className="w-5 h-5" />
+          </button>
         </div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar */}
-          <aside className="lg:w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-sm p-6 sticky top-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Filtros</h3>
-              
-              <div className="space-y-6">
-                {/* Search */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Buscar</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Buscar productos..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Categories */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {CATEGORIES.map((category) => (
-                      <option key={category.id} value={category.id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Price Range */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
-                  <div className="space-y-2">
-                    <input
-                      type="number"
-                      placeholder="Precio mínimo"
-                      value={priceRange.min}
-                      onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value) || 0})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Precio máximo"
-                      value={priceRange.max}
-                      onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value) || 1000000})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          {/* Main Content */}
-          <main className="flex-1">
-            {/* Controls */}
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-              <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <span className="text-sm text-gray-600">
-                  {loading ? 'Cargando...' : `${filteredProducts.length} productos encontrados`}
-                </span>
-                
-                <div className="flex items-center gap-4">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="name">Ordenar por Nombre</option>
-                    <option value="price-low">Precio: Menor a Mayor</option>
-                    <option value="price-high">Precio: Mayor a Menor</option>
-                    <option value="rating">Mejor Valorado</option>
-                  </select>
-
-                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setViewMode('grid')}
-                      className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      <Grid className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('list')}
-                      className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                    >
-                      <List className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Products */}
-            {loading ? (
-              <LoadingState />
-            ) : error ? (
-              <ErrorState />
-            ) : filteredProducts.length === 0 ? (
-              <EmptyState onClearFilters={clearFilters} />
-            ) : (
-              <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}`}>
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} viewMode={viewMode} />
-                ))}
-              </div>
-            )}
-          </main>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Wrench className="h-8 w-8 text-blue-400" />
-                <span className="text-2xl font-bold">FERREMAS</span>
-              </div>
-              <p className="text-gray-400">
-                Tu destino confiable para herramientas y materiales de construcción de calidad.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Enlaces Rápidos</h3>
-              <ul className="space-y-2">
-                <li><a href="/" className="text-gray-400 hover:text-white transition-colors">Inicio</a></li>
-                <li><a href="/productos" className="text-gray-400 hover:text-white transition-colors">Productos</a></li>
-                <li><a href="/contacto" className="text-gray-400 hover:text-white transition-colors">Contacto</a></li>
-                <li><a href="/admin" className="text-gray-400 hover:text-white transition-colors">Administrar</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Atención al Cliente</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Centro de Ayuda</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Devoluciones</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Info de Envío</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Seguir Pedido</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="text-lg font-semibold mb-4">Contáctanos</h3>
-              <div className="space-y-2 text-gray-400">
-                <p>Email: soporte@ferremas.cl</p>
-                <p>Teléfono: +56 2 2345 6789</p>
-                <p>Dirección: Av. Libertador 1234, Santiago, Chile</p>
-                <p>Horario: Lun-Vie 8:00-18:00, Sáb 9:00-14:00</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 FERREMAS. Todos los derechos reservados.</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+      <section>
+        {loading && <p>Cargando productos...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+        {!loading && !error && (
+          <ProductsList products={sortedProducts} viewMode={viewMode} />
+        )}
+      </section>
+    </main>
   );
 }

@@ -2,11 +2,16 @@
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Pencil, Trash2, Save, XCircle } from "lucide-react";
 
+type Product = {
+  name: string;
+  price: number;
+};
+
 export default function ProductAdminPanel() {
-  const [products, setProducts] = useState([]);
-  const [newProduct, setNewProduct] = useState({ name: "", price: "" });
+  const [products, setProducts] = useState<Product[]>([]);
+  const [newProduct, setNewProduct] = useState<{ name: string; price: string }>({ name: "", price: "" });
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
-  const [editProduct, setEditProduct] = useState({ name: "", price: "" });
+  const [editProduct, setEditProduct] = useState<{ name: string; price: string }>({ name: "", price: "" });
 
   // Mock fetch products
   useEffect(() => {
@@ -18,18 +23,19 @@ export default function ProductAdminPanel() {
 
   const handleCreate = () => {
     if (!newProduct.name || !newProduct.price) return;
-    setProducts([...products, { ...newProduct, price: Number(newProduct.price) }]);
+    setProducts([...products, { name: newProduct.name, price: Number(newProduct.price) }]);
     setNewProduct({ name: "", price: "" });
   };
 
   const handleEdit = (index: number) => {
     setEditingIndex(index);
-    setEditProduct({ ...products[index] });
+    const product = products[index];
+    setEditProduct({ name: product.name, price: product.price.toString() });
   };
 
   const handleSave = (index: number) => {
     const updated = [...products];
-    updated[index] = { ...editProduct, price: Number(editProduct.price) };
+    updated[index] = { name: editProduct.name, price: Number(editProduct.price) };
     setProducts(updated);
     setEditingIndex(null);
   };

@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "lucide-react": "^0.511.0",
     "next": "15.3.3",
     "nextjs-ecommerce": "file:",
     "react": "^19.0.0",
